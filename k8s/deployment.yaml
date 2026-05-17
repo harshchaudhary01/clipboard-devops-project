@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+  name: clipboard-app
+
+spec:
+  replicas: 1
+
+  selector:
+    matchLabels:
+      app: clipboard-app
+
+  template:
+    metadata:
+      labels:
+        app: clipboard-app
+
+    spec:
+      containers:
+      - name: clipboard-app
+
+        image: IMAGE_URI
+
+        ports:
+        - containerPort: 3000
+
+        env:
+        - name: MONGODB_URI
+          value: "MONGO_URI_PLACEHOLDER"
+
+        - name: PORT
+          value: "3000"

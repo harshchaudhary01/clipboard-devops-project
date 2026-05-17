@@ -1,0 +1,121 @@
+pipeline {
+    agent any
+
+    environment {
+        AWS_ACCOUNT_ID = "792339582456"
+        AWS_REGION = "ap-south-1"
+        ECR_REPO = "clipboard-devops"
+        IMAGE_TAG = "${BUILD_NUMBER}"
+    }
+
+    stages {
+
+        stage('Git Checkout') {
+            steps {
+                git branch: 'main',
+                url: 'YOUR_GITHUB_REPO_URL'
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                sh '''
+                docker build -t $ECR_REPO:$IMAGE_TAG ./app
+                '''
+            }
+        }
+
+        stage('Configure AWS Credentials') {
+            steps {
+                withCredentials([
+                    [$class: 'AmazonWebServicesCredentialsBinding',
+                    credentialsId: 'aws-creds']
+                ]) {
+
+                    sh '''
+                    aws sts get-caller-identity
+                    '''
+                }
+            }
+        }
+
+        stage('Login to AWS ECR') {
+            steps {
+
+                withCredentials([
+                    [$class: 'AmazonWebServicesCredentialsBinding',
+                    credentialsId: 'aws-creds']
+                ]) {
+
+                    sh '''
+                    aws ecr get-login-password --region $AWS_REGION | \
+                    docker login --username AWS \
+                    --password-stdin \
+                    $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
+                    '''
+                }
+            }
+        }
+
+        stage('Tag Docker Image') {
+            steps {
+                sh '''
+                docker tag $ECR_REPO:$IMAGE_TAG \
+                $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPO:$IMAGE_TAG
+                '''
+            }
+        }
+
+        stage('Push Docker Image to ECR') {
+            steps {
+
+                withCredentials([
+                    [$class: 'AmazonWebServicesCredentialsBinding',
+                    credentialsId: 'aws-creds']
+                ]) {
+
+                    sh '''
+                    docker push \
+                    $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPO:$IMAGE_TAG
+                    '''
+                }
+            }
+        }
+
+        stage('Deploy to EKS') {
+            steps {
+
+                withCredentials([
+                    string(credentialsId: 'mongo-uri', variable: 'MONGO_URI'),
+                    [$class: 'AmazonWebServicesCredentialsBinding',
+                    credentialsId: 'aws-creds']
+                ]) {
+
+                    sh '''
+
+                    cp k8s/deployment.yaml k8s/deployment-temp.yaml
+
+                    sed -i "s|IMAGE_URI|$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPO:$IMAGE_TAG|g" k8s/deployment-temp.yaml
+
+                    sed -i "s|MONGO_URI_PLACEHOLDER|$MONGO_URI|g" k8s/deployment-temp.yaml
+
+                    kubectl apply -f k8s/deployment-temp.yaml
+                    kubectl apply -f k8s/service.yaml
+
+                    '''
+                }
+            }
+        }
+    }
+
+    post {
+
+        success {
+            echo 'Deployment Successful!'
+        }
+
+        failure {
+            echo 'Pipeline Failed!'
+        }
+    }
+}
