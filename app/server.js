@@ -50,8 +50,8 @@ client.connect()
     console.error('MongoDB connection failed', err);
     process.exit(1);
   });
-  
-  
+
+
 
 // Serve frontend static files
 app.use(express.static(path.join(__dirname, 'public')));
@@ -108,7 +108,7 @@ app.post('/api/send', upload.array('file'), async (req, res) => {
     maxReceivers: receiverLimit,
     receiverCount: 0
   });
-  
+
 
 
   res.json({ success: true, message: 'Sent successfully!', code });
@@ -133,7 +133,11 @@ app.get('/api/receive/:code', async (req, res) => {
 
   res.json({
     text: updatedData.text || null,
-    files: updatedData.files?.map(id => ({ filename: `file-${id}`, url: `/api/file/${id}` })) || []
+    files:
+      updatedData.files?.map(id => ({
+        filename: `file-${id}`,
+        url: `/api/file/${id}`
+      })) || []
   });
 });
 
@@ -141,9 +145,9 @@ app.get('/api/receive/:code', async (req, res) => {
 app.get('/api/file/:id', async (req, res) => {
   try {
     const fileId = new ObjectId(req.params.id);
-    
+
     const files = await bucket.find({ _id: fileId }).toArray();
-    
+
     if (!files || files.length === 0) {
       return res.status(404).json({ error: 'File not found' });
     }
@@ -168,4 +172,6 @@ app.get('/', (req, res) => {
 
 // Start server
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
+app.listen(PORT, () =>
+  console.log(`Server running on http://localhost:${PORT}`)
+);
