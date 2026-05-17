@@ -82,30 +82,31 @@ pipeline {
             }
         }
 
-        stage('Deploy to EKS') {
-            steps {
+        stage('Deploy Container on EC2') {
+    steps {
 
-                withCredentials([
-                    string(credentialsId: 'mongo-uri', variable: 'MONGO_URI'),
-                    [$class: 'AmazonWebServicesCredentialsBinding',
-                    credentialsId: 'aws-creds']
-                ]) {
+        withCredentials([
+            string(credentialsId: 'mongo-uri', variable: 'MONGO_URI'),
+            [$class: 'AmazonWebServicesCredentialsBinding',
+            credentialsId: 'aws-creds']
+        ]) {
 
-                    sh '''
+            sh '''
 
-                    cp k8s/deployment.yaml k8s/deployment-temp.yaml
+            docker rm -f clipboard-container || true
 
-                    sed -i "s|IMAGE_URI|$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPO:$IMAGE_TAG|g" k8s/deployment-temp.yaml
+            docker pull $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPO:$IMAGE_TAG
 
-                    sed -i "s|MONGO_URI_PLACEHOLDER|$MONGO_URI|g" k8s/deployment-temp.yaml
+            docker run -d \
+            --name clipboard-container \
+            -p 3000:3000 \
+            -e MONGODB_URI=$MONGO_URI \
+            $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPO:$IMAGE_TAG
 
-                    kubectl apply -f k8s/deployment-temp.yaml
-                    kubectl apply -f k8s/service.yaml
-
-                    '''
-                }
-            }
+            '''
         }
+    }
+}
     }
 
     post {
