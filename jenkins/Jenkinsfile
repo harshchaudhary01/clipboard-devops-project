@@ -83,30 +83,59 @@ pipeline {
         }
 
         stage('Deploy Container on EC2') {
-    steps {
+            steps {
 
-        withCredentials([
-            string(credentialsId: 'mongo-uri', variable: 'MONGO_URI'),
-            [$class: 'AmazonWebServicesCredentialsBinding',
-            credentialsId: 'aws-creds']
-        ]) {
+                withCredentials([
+                    string(credentialsId: 'mongo-uri', variable: 'MONGO_URI'),
+                    [$class: 'AmazonWebServicesCredentialsBinding',
+                    credentialsId: 'aws-creds']
+                ]) {
 
-            sh '''
+                    sh '''
 
-            docker rm -f clipboard-container || true
+                    docker rm -f clipboard-container || true
 
-            docker pull $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPO:$IMAGE_TAG
+                    docker pull $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPO:$IMAGE_TAG
 
-            docker run -d \
-            --name clipboard-container \
-            -p 3000:3000 \
-            -e MONGODB_URI=$MONGO_URI \
-            $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPO:$IMAGE_TAG
+                    docker run -d \
+                    --restart unless-stopped \
+                    --name clipboard-container \
+                    -p 3000:3000 \
+                    -e MONGODB_URI=$MONGO_URI \
+                    $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPO:$IMAGE_TAG
 
-            '''
+                    '''
+                }
+            }
         }
-    }
-}
+
+        stage('Verify Prometheus Monitoring') {
+            steps {
+                sh '''
+                echo "Checking Prometheus Container..."
+
+                docker ps | grep prometheus
+
+                curl -f http://localhost:9090/-/healthy || exit 1
+
+                echo "Prometheus is Running Successfully!"
+                '''
+            }
+        }
+
+        stage('Verify Grafana Dashboard') {
+            steps {
+                sh '''
+                echo "Checking Grafana Container..."
+
+                docker ps | grep grafana
+
+                curl -f http://localhost:3001/api/health || exit 1
+
+                echo "Grafana is Running Successfully!"
+                '''
+            }
+        }
     }
 
     post {
