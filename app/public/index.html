@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+
+<head>
+  <meta charset="UTF-8" />
+  <title>ClipVault</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- QR CODE -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+  <link rel="stylesheet" href="style.css" />
+
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+    rel="stylesheet">
+</head>
+
+<body class="bg-[#070B14] text-white min-h-screen font-[Inter] overflow-x-hidden">
+
+  <!-- BACKGROUND -->
+  <div class="bg-grid"></div>
+  <div class="glow glow-1"></div>
+  <div class="glow glow-2"></div>
+
+  <main class="relative z-10 max-w-6xl mx-auto px-6 py-10">
+
+    <!-- TOP -->
+    <div class="flex items-center justify-between mb-12">
+
+      <div>
+        <h1 class="text-5xl font-extrabold tracking-tight">
+          Clip<span class="text-blue-500">Vault</span>
+        </h1>
+
+        <p class="text-gray-400 mt-2 text-sm">
+          Instant secure transfer between devices
+        </p>
+      </div>
+
+      <div class="hidden md:flex items-center gap-3">
+        <div class="status-dot"></div>
+        <span class="text-sm text-gray-400">
+          Encrypted Session
+        </span>
+      </div>
+
+    </div>
+
+    <!-- GRID -->
+    <div class="grid lg:grid-cols-2 gap-8">
+
+      <!-- SEND -->
+      <section class="card">
+
+        <div class="card-head">
+          <div>
+            <h2>Send</h2>
+            <p>Share text & files instantly</p>
+          </div>
+        </div>
+
+        <textarea id="textInput"
+          placeholder="Paste your text..."
+          class="input textarea"></textarea>
+
+        <!-- FILE BOX -->
+        <label class="upload-box">
+          <input type="file" id="fileInput" multiple hidden>
+
+          <div class="upload-inner">
+            <div class="upload-icon">
+              ↑
+            </div>
+
+            <div>
+              <h3>Upload Files</h3>
+              <p>Drag & drop or browse</p>
+            </div>
+          </div>
+        </label>
+        <div id="filePreview" class="mt-4 space-y-3"></div>
+
+        <!-- SETTINGS -->
+        <div class="grid grid-cols-2 gap-4 mt-5">
+
+          <div>
+            <label class="input-label">
+              Max Receivers
+            </label>
+
+            <input
+              type="number"
+              id="receiverInput"
+              min="1"
+              placeholder="1"
+              class="input">
+          </div>
+
+          <div>
+            <label class="input-label">
+              Expiry (mins)
+            </label>
+
+            <input
+              type="number"
+              id="expiryInput"
+              min="1"
+              placeholder="10"
+              class="input">
+          </div>
+
+        </div>
+
+        <!-- BUTTON -->
+        <button onclick="sendData()" class="primary-btn mt-6">
+          <span>Send Securely</span>
+        </button>
+
+        <!-- LOADER -->
+        <div id="sendLoading" class="hidden loader-wrap">
+          <div class="loader"></div>
+        </div>
+
+        <!-- RESULT -->
+        <div id="sendResult" class="hidden"></div>
+
+      </section>
+
+      <!-- RECEIVE -->
+      <section class="card">
+
+        <div class="card-head">
+          <div>
+            <h2>Receive</h2>
+            <p>Open shared content</p>
+          </div>
+        </div>
+
+        <input
+          id="codeInput"
+          maxlength="4"
+          placeholder="Enter code"
+          class="input text-center text-2xl tracking-[10px] font-bold" />
+
+        <button onclick="receiveData()" class="secondary-btn mt-5">
+          Open Transfer
+        </button>
+
+        <p id="receiveResult" class="mt-5 text-red-400 text-sm"></p>
+
+        <!-- FILES -->
+        <div id="filesBlock" class="hidden result-box mt-6">
+          <div class="result-title">
+            Files
+          </div>
+
+          <div id="fileLinks" class="space-y-3"></div>
+        </div>
+
+        <!-- TEXT -->
+        <div id="textBlock" class="hidden result-box mt-6">
+
+          <div class="flex items-center justify-between mb-4">
+            <div class="result-title">
+              Message
+            </div>
+
+            <button onclick="copyReceivedText()" class="mini-btn">
+              Copy
+            </button>
+          </div>
+
+          <p id="receivedText" class="received-text"></p>
+
+        </div>
+
+      </section>
+
+    </div>
+
+  </main>
+
+  <!-- QR MODAL -->
+  <div id="qrModal" class="qr-modal hidden">
+
+    <div class="qr-card">
+
+      <div class="flex items-center justify-between mb-6">
+
+        <div>
+          <h3 class="text-xl font-bold">
+            Open on Phone
+          </h3>
+
+          <p class="text-gray-400 text-sm mt-1">
+            Scan QR to continue on mobile
+          </p>
+        </div>
+
+        <button onclick="closeQRModal()" class="close-btn">
+          ✕
+        </button>
+
+      </div>
+
+      <div id="qrcode" class="qr-box"></div>
+
+    </div>
+
+  </div>
+
+  <!-- TOAST -->
+  <div id="toast"></div>
+
+  <script src="script.js"></script>
+
+</body>
+
+</html>
